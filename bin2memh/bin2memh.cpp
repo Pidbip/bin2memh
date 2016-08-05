@@ -1,7 +1,4 @@
-// bin2memh.cpp : Defines the entry point for the console application.
-//
 
-//#include "stdafx.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -14,6 +11,7 @@ int writeblock(char *buf, int count, int byteline, FILE* out);
 
 int main(int argc, char** argv)
 {
+	int linewrited = 0;
 	int read_count;
 	int buswidth = 8;
 	int byteline = buswidth/8;
@@ -21,7 +19,6 @@ int main(int argc, char** argv)
 	FILE* in_file;
 	FILE* out_file;
 
-	//printf("argc %d \n", argc);
 	if((argc < 3) || (argc > 4))
 		usage(&argv[0][0]);
 
@@ -48,11 +45,9 @@ int main(int argc, char** argv)
 
 	char *read_buff = (char*)malloc(32 * byteline);
 
-	while((read_count = fread(read_buff, byteline, 32, in_file)) != 0){
-		
-		printf("read_count =  %d\n", read_count);
 
-		writeblock(read_buff, read_count, byteline, out_file);
+	while((read_count = fread(read_buff, byteline, 32, in_file)) != 0){
+		linewrited += writeblock(read_buff, read_count, byteline, out_file);
 	}
 
 	free(read_buff);
@@ -60,6 +55,7 @@ int main(int argc, char** argv)
 	fclose(in_file);
 	fclose(out_file);
 
+	printf("Recorded %d lines\n", linewrited);
 
 	return 0;
 }
@@ -80,23 +76,10 @@ int writeline(char *buf, int byteline, FILE* out){
 }
 
 int writeblock(char *buf, int count, int byteline, FILE* out){
-
-	static int chunk = 0;
 	int i;
-	if(chunk != 0){
-		for(i = 0; i < chunk; i++){
-			fprintf(out, "%02.2X", buf[i]&0xff);
-		}
-		buf += i;
-		fprintf(out, "\n");
-	}
-
-
 	for(i = 0; i < count; i++){
 		writeline(buf, byteline, out);
-		buf += 2;
+		buf += byteline;
 	}
-	chunk = count - (i);
-	printf("chunk =  %d\n", chunk);
-	return 0;
+	return i;
 }
